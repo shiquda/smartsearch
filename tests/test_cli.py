@@ -1,5 +1,6 @@
 import json
 import asyncio
+from pathlib import Path
 from smart_search import cli
 from smart_search import skill_installer
 
@@ -1413,7 +1414,7 @@ def test_skill_installer_pi_target_uses_agent_skill_root(tmp_path):
 
     assert result["ok"] is True
     assert result["installed_count"] == 1
-    assert result["installed"][0]["path"].endswith(".pi/agent/skills/smart-search-cli")
+    assert Path(result["installed"][0]["path"]).as_posix().endswith(".pi/agent/skills/smart-search-cli")
     assert (tmp_path / "project" / ".pi" / "agent" / "skills" / "smart-search-cli" / "SKILL.md").is_file()
     assert not (tmp_path / "project" / ".pi" / "skills" / "smart-search-cli").exists()
 
