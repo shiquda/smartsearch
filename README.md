@@ -117,7 +117,7 @@ provider keys or create Trellis/hooks/agents/commands.
 | `main_search` | `search` | xAI Responses, OpenAI-compatible Chat Completions | Broad answer generation and synthesis |
 | `docs_search` | `context7-library`, `context7-docs`, `exa-search` | Context7, Exa | Official docs, SDKs, APIs, framework/library evidence |
 | `web_search` | `zhipu-search`, intent-routed reinforcement inside `search` | Zhipu, Tavily, Firecrawl | Chinese, domestic, current, domain-filtered, or supplementary web discovery |
-| `web_fetch` | `fetch` | Tavily, Firecrawl | Exact URL content extraction for evidence |
+| `web_fetch` | `fetch` | Jina Reader, Tavily, Firecrawl | Exact URL content extraction for evidence |
 | `vertical_search` | `anysearch-domains`, `anysearch-search`, `anysearch-extract`, `anysearch-batch` | AnySearch (experimental) | Acceptance testing for structured vertical domains such as CVE, finance, legal, academic, and code/docs |
 | `site_map` | `map` | Tavily | Site/documentation structure discovery |
 | `deep_planner` | `deep` / `dr` | Local planner only | Offline plan generation; no provider call by default |
@@ -129,7 +129,7 @@ Fallback is same-capability only:
 | `main_search` | xAI Responses -> OpenAI-compatible |
 | `docs_search` | Context7 for library/API/docs intent; Exa for official domains, papers, product pages, and trusted-site discovery |
 | `web_search` | Zhipu -> Tavily -> Firecrawl |
-| `web_fetch` | Tavily -> Firecrawl |
+| `web_fetch` | Jina Reader -> Tavily -> Firecrawl |
 
 AnySearch is intentionally not part of the `web_search` fallback chain and is not required by the `standard` minimum profile. Use its explicit commands for acceptance and boundary testing before promoting any vertical domain into a future route.
 
@@ -195,7 +195,8 @@ Use `smart-search setup` for normal configuration. Environment variables remain 
 | Exa | Low-noise official docs, API, paper, product, trusted-page discovery | `EXA_API_KEY` | [Exa docs](https://docs.exa.ai/) | [Exa API keys](https://dashboard.exa.ai/api-keys) |
 | Context7 | SDK, library, framework, and API documentation fallback | `CONTEXT7_API_KEY`, `CONTEXT7_BASE_URL` | [Context7 docs](https://context7.com/docs) | [Context7](https://context7.com/) |
 | Zhipu Web Search API | Chinese, domestic, current, or domain-filtered web discovery | `ZHIPU_API_KEY`, `ZHIPU_API_URL`, `ZHIPU_SEARCH_ENGINE` | [Zhipu web search docs](https://docs.bigmodel.cn/cn/guide/tools/web-search) | [Zhipu API keys](https://open.bigmodel.cn/usercenter/apikeys) |
-| Tavily | Extra web sources, URL fetch, and site map | `TAVILY_API_URL`, `TAVILY_API_KEY` | [Tavily docs](https://docs.tavily.com/) | [Tavily app](https://app.tavily.com/home) |
+| Jina Reader | Default URL fetch; anonymous basic mode works without a key, `readerlm-v2` requires `JINA_API_KEY` and explicit `JINA_RESPOND_WITH=readerlm-v2` | `JINA_API_KEY`, `JINA_READER_API_URL`, `JINA_RESPOND_WITH` | [Jina Reader API](https://jina.ai/reader/) | [Jina API keys](https://jina.ai/) |
+| Tavily | Extra web sources, URL fetch fallback, and site map | `TAVILY_API_URL`, `TAVILY_API_KEY` | [Tavily docs](https://docs.tavily.com/) | [Tavily app](https://app.tavily.com/home) |
 | Firecrawl | Fetch fallback and supplementary web sources | `FIRECRAWL_API_URL`, `FIRECRAWL_API_KEY` | [Firecrawl docs](https://docs.firecrawl.dev/) | [Firecrawl API keys](https://www.firecrawl.dev/app/api-keys) |
 | AnySearch | Experimental vertical search acceptance surface; not a default fallback | `ANYSEARCH_API_URL`, `ANYSEARCH_API_KEY`, `ANYSEARCH_TIMEOUT_SECONDS` | Provider documentation | AnySearch dashboard / provider console |
 
@@ -209,6 +210,13 @@ Important boundaries:
 - `ZHIPU_SEARCH_ENGINE` defaults to `search_std`. Supported official values include `search_std`, `search_pro`, `search_pro_sogou`, and `search_pro_quark`; custom values remain allowed for future services.
 - `TAVILY_API_URL` affects Tavily only. It does not proxy Zhipu. For Tavily Hikari / pooled endpoints, use `https://<host>/api/tavily`; setup normalizes root-host or `/mcp` inputs to that REST base.
 - `FIRECRAWL_API_URL` defaults to `https://api.firecrawl.dev/v2`.
+
+Jina Reader notes:
+
+- Basic `r.jina.ai` fetch works anonymously and is the default first `web_fetch` attempt.
+- `JINA_API_KEY` raises Jina rate limits but does not automatically enable model-based conversion.
+- `JINA_RESPOND_WITH=readerlm-v2` opts into ReaderLM-v2. This requires `JINA_API_KEY`, can be slower and more costly, and is intended for explicit high-quality conversion experiments rather than default evidence fetching.
+
 - AnySearch uses JSON-RPC 2.0 `tools/call` at `https://api.anysearch.com/mcp` by default. It allows anonymous calls when no key is configured, but authenticated calls send `Authorization: Bearer ...`. HTTP 200 responses with `result.isError=true` are treated as provider errors, not as successful evidence.
 
 Non-interactive setup example:
@@ -229,6 +237,9 @@ smart-search setup --non-interactive `
   --zhipu-key "your-zhipu-key" `
   --zhipu-api-url "https://open.bigmodel.cn/api" `
   --zhipu-search-engine "search_pro_sogou" `
+  --jina-reader-api-url "https://r.jina.ai" `
+  --jina-key "optional-jina-key" `
+  --jina-respond-with "" `
   --tavily-api-url "https://api.tavily.com" `
   --tavily-key "your-tavily-key" `
   --firecrawl-api-url "https://api.firecrawl.dev/v2" `
@@ -239,7 +250,7 @@ Minimum profile defaults to `standard`, requiring at least:
 
 - one `main_search` provider: xAI Responses or OpenAI-compatible;
 - one `docs_search` provider: Exa or Context7;
-- one `web_fetch` provider: Tavily or Firecrawl.
+- one `web_fetch` provider: Jina Reader, Tavily, or Firecrawl. Jina Reader basic mode is available without an API key, so `web_fetch` can be satisfied by default unless you disable the standard minimum profile for experiments.
 
 Missing required capabilities fail closed with a configuration error. Use `SMART_SEARCH_MINIMUM_PROFILE=off` only for local experiments.
 

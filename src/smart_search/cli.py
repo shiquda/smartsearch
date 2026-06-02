@@ -1134,12 +1134,13 @@ def _setup_status_from_values(values: dict[str, str]) -> dict[str, Any]:
             "configured": [
                 provider
                 for provider, configured in [
+                    ("jina", True),
                     ("tavily", has("TAVILY_API_KEY")),
                     ("firecrawl", has("FIRECRAWL_API_KEY")),
                 ]
                 if configured
             ],
-            "fallback_chain": ["tavily", "firecrawl"],
+            "fallback_chain": ["jina", "tavily", "firecrawl"],
         },
         "vertical_search": {
             "configured": ["anysearch"] if has("ANYSEARCH_API_KEY") else [],
@@ -1658,6 +1659,12 @@ def _prompt_zhipu_search_engine(values: dict[str, str], current: dict[str, str],
     values["ZHIPU_SEARCH_ENGINE"] = choice
 
 
+def _prompt_jina(values: dict[str, str], current: dict[str, str], lang: str) -> None:
+    values["JINA_API_KEY"] = _prompt_value("JINA_API_KEY", "Jina API key", current.get("JINA_API_KEY", ""), optional=True, lang=lang)
+    values["JINA_READER_API_URL"] = _prompt_value("JINA_READER_API_URL", "Jina Reader API URL", current.get("JINA_READER_API_URL", "https://r.jina.ai"), optional=True, lang=lang)
+    values["JINA_RESPOND_WITH"] = _prompt_value("JINA_RESPOND_WITH", "Jina respond-with mode (optional, e.g. readerlm-v2)", current.get("JINA_RESPOND_WITH", ""), optional=True, lang=lang)
+
+
 def _prompt_web_fetch(values: dict[str, str], current: dict[str, str], lang: str) -> None:
     status = _setup_status_from_values(_merge_setup_values(current, values))
     default_selected = status["web_fetch"]["configured"] or ["tavily"]
@@ -1834,6 +1841,9 @@ def _run_advanced_setup_prompts(values: dict[str, str], current: dict[str, str],
         ("ZHIPU_API_KEY", "Zhipu API key", True),
         ("ZHIPU_API_URL", "Zhipu Web Search API URL", True),
         ("ZHIPU_SEARCH_ENGINE", "Zhipu search service (search_std/search_pro/search_pro_sogou/search_pro_quark/custom)", True),
+        ("JINA_API_KEY", "Jina API key", True),
+        ("JINA_READER_API_URL", "Jina Reader API URL", True),
+        ("JINA_RESPOND_WITH", "Jina respond-with mode (optional, e.g. readerlm-v2)", True),
         ("TAVILY_API_URL", "Tavily API URL", True),
         ("TAVILY_API_KEY", "Tavily API key", True),
         ("FIRECRAWL_API_URL", "Firecrawl API URL", True),
@@ -2046,6 +2056,9 @@ def _run_setup(args: argparse.Namespace) -> int:
         "ZHIPU_API_KEY": args.zhipu_key,
         "ZHIPU_API_URL": _normalize_zhipu_api_url(args.zhipu_api_url),
         "ZHIPU_SEARCH_ENGINE": args.zhipu_search_engine,
+        "JINA_API_KEY": args.jina_key,
+        "JINA_READER_API_URL": args.jina_reader_api_url,
+        "JINA_RESPOND_WITH": args.jina_respond_with,
         "TAVILY_API_URL": _normalize_tavily_flag_api_url(args.tavily_api_url, args.tavily_key),
         "TAVILY_API_KEY": args.tavily_key,
         "FIRECRAWL_API_URL": _normalize_firecrawl_api_url(args.firecrawl_api_url),
@@ -2398,6 +2411,9 @@ def build_parser() -> argparse.ArgumentParser:
     setup_parser.add_argument("--zhipu-key", default="", help="Save ZHIPU_API_KEY.")
     setup_parser.add_argument("--zhipu-api-url", default="", help="Save ZHIPU_API_URL.")
     setup_parser.add_argument("--zhipu-search-engine", default="", help="Save ZHIPU_SEARCH_ENGINE.")
+    setup_parser.add_argument("--jina-key", default="", help="Save JINA_API_KEY.")
+    setup_parser.add_argument("--jina-reader-api-url", default="", help="Save JINA_READER_API_URL.")
+    setup_parser.add_argument("--jina-respond-with", default="", help="Save JINA_RESPOND_WITH, e.g. readerlm-v2 (requires JINA_API_KEY).")
     setup_parser.add_argument("--tavily-api-url", default="", help="Save TAVILY_API_URL.")
     setup_parser.add_argument("--tavily-key", default="", help="Save TAVILY_API_KEY.")
     setup_parser.add_argument("--firecrawl-api-url", default="", help="Save FIRECRAWL_API_URL.")

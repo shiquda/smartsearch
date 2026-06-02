@@ -143,7 +143,7 @@ smart-search deep "https://example.com/source" --format json
 - Legacy `SMART_SEARCH_API_URL`, `SMART_SEARCH_API_KEY`, `SMART_SEARCH_API_MODE`, `SMART_SEARCH_MODEL`, and `SMART_SEARCH_XAI_TOOLS` are unsupported config keys.
 - xAI Responses mode may use only `XAI_TOOLS=web_search,x_search` and a subset of those tools.
 - Chat Completions mode must not send xAI `web_search` / `x_search` tools or legacy `search_parameters`; xAI Chat Completions Live Search is deprecated.
-- The standard minimum profile requires one configured provider in each of `main_search`, `docs_search`, and fetch capability. Missing required capabilities should be treated as a hard configuration failure.
+- The standard minimum profile requires one configured provider in each of `main_search`, `docs_search`, and fetch capability; Jina Reader basic fetch is available without a key. Missing required capabilities should be treated as a hard configuration failure.
 - AnySearch is reported only as optional experimental `vertical_search`; it is not part of the `web_search` fallback and is not required by the `standard` minimum profile.
 - `search` exposes `--validation fast|balanced|strict`, `--fallback auto|off`, and `--providers auto|CSV`. Default validation is `balanced`; fallback only happens within the same capability.
 - xAI Responses is the default main answer route for Grok/xAI. In `fallback=auto`, a failed xAI Responses main route can fall back to OpenAI-compatible only when the OpenAI-compatible provider is separately configured.
@@ -153,7 +153,7 @@ smart-search deep "https://example.com/source" --format json
 - With both Tavily and Firecrawl configured, `search --extra-sources N` splits extra sources between them, with Tavily receiving about 60% and Firecrawl the rest.
 - Search JSON separates `primary_sources`, `extra_sources`, and backward-compatible merged `sources`.
 - `primary_sources` are extracted from the primary model answer. `extra_sources` are parallel Tavily / Firecrawl candidates and are not automatically used to verify `content`.
-- `fetch` tries Tavily first and uses Firecrawl only as a fallback when Tavily returns no content.
+- `fetch` tries Jina Reader first, then Tavily, then Firecrawl. Jina basic Reader works without a key; ReaderLM-v2 requires `JINA_API_KEY` and explicit `JINA_RESPOND_WITH=readerlm-v2`.
 - `map` currently uses Tavily only.
 - `exa-search` and `exa-similar` use Exa only.
 - `context7-library` and `context7-docs` use Context7 only.

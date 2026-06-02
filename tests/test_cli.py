@@ -356,7 +356,7 @@ def test_doctor_markdown_outputs_human_health_report(monkeypatch, capsys):
             "capability_status": {
                 "main_search": {"ok": True, "configured": ["openai-compatible"], "fallback_chain": ["xai-responses", "openai-compatible"]},
                 "docs_search": {"ok": True, "configured": ["context7"], "fallback_chain": ["context7", "exa"]},
-                "web_fetch": {"ok": True, "configured": ["tavily"], "fallback_chain": ["tavily", "firecrawl"]},
+                "web_fetch": {"ok": True, "configured": ["jina", "tavily"], "fallback_chain": ["jina", "tavily", "firecrawl"]},
             },
             "main_search_connection_tests": {
                 "openai-compatible": {
@@ -1712,7 +1712,7 @@ def test_setup_guided_en_reports_missing_minimum(monkeypatch, capsys):
     assert code == cli.EXIT_OK
     assert saved == {}
     assert data["minimum_profile_ok"] is False
-    assert data["minimum_profile_missing"] == ["main_search", "docs_search", "web_fetch"]
+    assert data["minimum_profile_missing"] == ["main_search", "docs_search"]
     assert "Smart Search setup wizard" in captured.err
     assert "If unsure" in captured.err
     assert "main_search + docs_search + web_fetch" in captured.err
@@ -1768,7 +1768,7 @@ def test_setup_guided_main_search_can_save_openai_compatible_peer(monkeypatch, c
         "OPENAI_COMPATIBLE_API_KEY": "relay-test-secret",
     }
     assert data["capability_status"]["main_search"]["configured"] == ["openai-compatible"]
-    assert data["minimum_profile_missing"] == ["docs_search", "web_fetch"]
+    assert data["minimum_profile_missing"] == ["docs_search"]
     assert "relay-test-secret" not in captured.out
     assert "relay-test-secret" not in captured.err
 

@@ -304,11 +304,11 @@ Agent timeout handling contract:
 - `main_search`: xAI Responses first for Grok/xAI, then OpenAI-compatible answer fallback when that peer provider is separately configured and `--fallback auto` is active.
 - `web_search`: Zhipu first when routed in, then Tavily / Firecrawl source search when configured.
 - `docs_search`: Context7 first for library/API/docs intent, then Exa for official-domain, paper, product-page, trusted-site, or low-noise supplemental discovery.
-- Fetch capability: Tavily first, then Firecrawl.
+- Fetch capability: Jina Reader first, then Tavily, then Firecrawl.
 - `search` calls Tavily and/or Firecrawl only when `--extra-sources` is greater than 0.
 - If both Tavily and Firecrawl are configured, `search --extra-sources N` gives about 60% of extra source slots to Tavily and the remainder to Firecrawl.
 - `extra_sources` are retrieved in parallel and are not automatically used by the primary model to verify its answer.
-- `fetch` tries Tavily first, then Firecrawl as fallback when Tavily returns no content.
+- `fetch` tries Jina Reader first, then Tavily, then Firecrawl as fallbacks when prior providers return no content.
 - `map` uses Tavily only.
 - `exa-search` and `exa-similar` use Exa only.
 - `zhipu-search` uses Zhipu only.

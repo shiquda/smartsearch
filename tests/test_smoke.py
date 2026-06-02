@@ -9,7 +9,7 @@ def test_minimum_profile_reports_missing_categories(monkeypatch):
     result = service.validate_minimum_profile()
 
     assert result["ok"] is False
-    assert set(result["missing"]) == {"main_search", "docs_search", "web_fetch"}
+    assert set(result["missing"]) == {"main_search", "docs_search"}
     assert "capability_status" in result
 
 
@@ -78,7 +78,7 @@ async def test_live_smoke_treats_provider_failure_as_degraded_when_fallback_exis
                 "main_search": {"configured": ["xai-responses"], "fallback_chain": ["xai-responses", "openai-compatible"], "ok": True},
                 "web_search": {"configured": ["zhipu", "tavily"], "fallback_chain": ["zhipu", "tavily", "firecrawl"], "ok": True},
                 "docs_search": {"configured": ["context7"], "fallback_chain": ["context7", "exa"], "ok": True},
-                "web_fetch": {"configured": ["tavily"], "fallback_chain": ["tavily", "firecrawl"], "ok": True},
+                "web_fetch": {"configured": ["jina", "tavily"], "fallback_chain": ["jina", "tavily", "firecrawl"], "ok": True},
             },
             "zhipu_connection_test": {"status": "warning", "message": "HTTP 429: Too Many Requests"},
             "context7_connection_test": {"status": "not_configured", "message": "CONTEXT7_API_KEY 未设置"},
@@ -102,12 +102,16 @@ async def test_fetch_attempts_show_fallback(monkeypatch):
     monkeypatch.setenv("TAVILY_API_KEY", "tavily-secret")
     monkeypatch.setenv("FIRECRAWL_API_KEY", "firecrawl-secret")
 
+    async def no_jina(url):
+        return None
+
     async def no_tavily(url):
         return None
 
     async def yes_firecrawl(url, ctx=None):
         return "# Page"
 
+    monkeypatch.setattr(service, "call_jina_reader", no_jina)
     monkeypatch.setattr(service, "call_tavily_extract", no_tavily)
     monkeypatch.setattr(service, "call_firecrawl_scrape", yes_firecrawl)
 
@@ -116,7 +120,7 @@ async def test_fetch_attempts_show_fallback(monkeypatch):
     assert result["ok"] is True
     assert result["provider"] == "firecrawl"
     assert result["fallback_used"] is True
-    assert [a["provider"] for a in result["provider_attempts"]] == ["tavily", "firecrawl"]
+    assert [a["provider"] for a in result["provider_attempts"]] == ["jina", "tavily", "firecrawl"]
 
 
 @pytest.mark.asyncio

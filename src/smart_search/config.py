@@ -47,6 +47,9 @@ class Config:
         "TAVILY_TIMEOUT_SECONDS",
         "FIRECRAWL_API_KEY",
         "FIRECRAWL_API_URL",
+        "JINA_API_KEY",
+        "JINA_READER_API_URL",
+        "JINA_RESPOND_WITH",
         "ANYSEARCH_API_KEY",
         "ANYSEARCH_API_URL",
         "ANYSEARCH_TIMEOUT_SECONDS",
@@ -395,6 +398,18 @@ class Config:
     @property
     def firecrawl_api_key(self) -> str | None:
         return self._get_config_value("FIRECRAWL_API_KEY")
+
+    @property
+    def jina_api_key(self) -> str | None:
+        return self._get_config_value("JINA_API_KEY")
+
+    @property
+    def jina_reader_api_url(self) -> str:
+        return self._get_config_value("JINA_READER_API_URL", "https://r.jina.ai") or "https://r.jina.ai"
+
+    @property
+    def jina_respond_with(self) -> str:
+        return self._get_config_value("JINA_RESPOND_WITH", "") or ""
 
     @property
     def anysearch_api_url(self) -> str:

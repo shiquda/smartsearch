@@ -667,12 +667,13 @@ def get_capability_status() -> dict[str, Any]:
             "configured": [
                 name
                 for name, enabled in [
+                    ("jina", True),
                     ("tavily", bool(config.tavily_api_key)),
                     ("firecrawl", bool(config.firecrawl_api_key)),
                 ]
                 if enabled
             ],
-            "fallback_chain": ["tavily", "firecrawl"],
+            "fallback_chain": ["jina", "tavily", "firecrawl"],
         },
         "vertical_search": {
             "configured": ["anysearch"] if config.anysearch_api_key else [],
@@ -998,6 +999,30 @@ async def _run_docs_search_fallback(
         except Exception as e:
             attempts.append(_attempt("docs_search", provider, "error", start, error_type="runtime_error", error=str(e)))
     return [], attempts
+
+
+async def call_jina_reader(url: str) -> str | None:
+    api_key = config.jina_api_key
+    base_url = config.jina_reader_api_url.rstrip("/")
+    endpoint = f"{base_url}/{url}"
+    headers = {"X-Return-Format": "markdown"}
+    respond_with = config.jina_respond_with.strip()
+    if respond_with and api_key:
+        headers["X-Respond-With"] = respond_with
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            response = await client.get(endpoint, headers=headers)
+            if response.status_code == 200:
+                content = response.text
+                return content if content and content.strip() else None
+            await log_info(None, f"Jina Reader HTTP {response.status_code}: {response.text[:200]}", config.debug_enabled)
+            return None
+    except Exception as e:
+        await log_info(None, f"Jina Reader error: {e}", config.debug_enabled)
+        return None
 
 
 async def call_tavily_extract(url: str) -> str | None:
@@ -1446,6 +1471,22 @@ def _primary_search_error_result(
 async def fetch(url: str) -> dict[str, Any]:
     start = time.time()
     attempts: list[dict] = []
+
+    jina_start = time.time()
+    jina_result = await call_jina_reader(url)
+    if jina_result:
+        attempts.append(_attempt("web_fetch", "jina", "ok", jina_start, result_count=1))
+        return {
+            "ok": True,
+            "url": url,
+            "provider": "jina",
+            "content": jina_result,
+            "provider_attempts": attempts,
+            "fallback_used": False,
+            "elapsed_ms": _elapsed_ms(start),
+        }
+    attempts.append(_attempt("web_fetch", "jina", "empty", jina_start))
+
     tavily_start = time.time()
     tavily_result = await call_tavily_extract(url)
     if tavily_result:

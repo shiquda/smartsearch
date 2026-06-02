@@ -725,12 +725,16 @@ async def test_search_reports_primary_provider_http_error(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_fetch_prefers_tavily(monkeypatch):
+    async def no_jina(url):
+        return None
+
     async def yes_tavily(url):
         return "# Tavily Page"
 
     async def no_firecrawl(url, ctx=None):
         raise AssertionError("Firecrawl should not run when Tavily succeeds")
 
+    monkeypatch.setattr(service, "call_jina_reader", no_jina)
     monkeypatch.setattr(service, "call_tavily_extract", yes_tavily)
     monkeypatch.setattr(service, "call_firecrawl_scrape", no_firecrawl)
 
@@ -743,12 +747,16 @@ async def test_fetch_prefers_tavily(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_fetch_fallbacks_to_firecrawl(monkeypatch):
+    async def no_jina(url):
+        return None
+
     async def no_tavily(url):
         return None
 
     async def yes_firecrawl(url, ctx=None):
         return "# Page"
 
+    monkeypatch.setattr(service, "call_jina_reader", no_jina)
     monkeypatch.setattr(service, "call_tavily_extract", no_tavily)
     monkeypatch.setattr(service, "call_firecrawl_scrape", yes_firecrawl)
 
@@ -764,12 +772,16 @@ async def test_fetch_reports_config_error_without_extract_keys(monkeypatch):
     monkeypatch.delenv("TAVILY_API_KEY", raising=False)
     monkeypatch.delenv("FIRECRAWL_API_KEY", raising=False)
 
+    async def no_jina(url):
+        return None
+
     async def no_tavily(url):
         return None
 
     async def no_firecrawl(url, ctx=None):
         return None
 
+    monkeypatch.setattr(service, "call_jina_reader", no_jina)
     monkeypatch.setattr(service, "call_tavily_extract", no_tavily)
     monkeypatch.setattr(service, "call_firecrawl_scrape", no_firecrawl)
 
@@ -784,12 +796,16 @@ async def test_fetch_reports_network_error_when_providers_fail(monkeypatch):
     monkeypatch.setenv("TAVILY_API_KEY", "tavily-secret")
     monkeypatch.setenv("FIRECRAWL_API_KEY", "firecrawl-secret")
 
+    async def no_jina(url):
+        return None
+
     async def no_tavily(url):
         return None
 
     async def no_firecrawl(url, ctx=None):
         return None
 
+    monkeypatch.setattr(service, "call_jina_reader", no_jina)
     monkeypatch.setattr(service, "call_tavily_extract", no_tavily)
     monkeypatch.setattr(service, "call_firecrawl_scrape", no_firecrawl)
 
